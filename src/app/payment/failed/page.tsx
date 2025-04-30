@@ -17,7 +17,7 @@ export default function PaymentFailed() {
           We couldn't process your payment. Please try again or contact support
           if the problem persists.
         </Text>
-        <Button onClick={() => router.push("/auth")} block>
+        <Button onClick={() => router.push("/")} block>
           Try Again
         </Button>
       </div>

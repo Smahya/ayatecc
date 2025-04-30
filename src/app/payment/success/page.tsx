@@ -14,7 +14,7 @@ export default function PaymentSuccess() {
           Payment Successful!
         </Text>
         <Text variant="body2" className="mb-8">
-          Thank you for your payment. Your registration has been completed
+          Thank you for your payment. Your payment has been completed
           successfully.
         </Text>
         <Button onClick={() => router.push("/")} block>
