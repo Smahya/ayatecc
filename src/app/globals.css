@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (prefers-color-scheme: dark) {
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-inter);
+}
+
+.app-background {
+  @apply bg-white dark:bg-neutral-950;
+}
+
+.divider {
+  @apply w-full h-px bg-neutral-200 dark:bg-neutral-800;
+}
+
+.border-custom {
+  @apply border-neutral-200 dark:border-neutral-800;
+}
+
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: 45px;
+  aspect-ratio: 0.75;
+  --c: no-repeat linear-gradient(#000 0 0);
+  background: var(--c) 0% 100%, var(--c) 50% 100%, var(--c) 100% 100%;
+  background-size: 20% 65%;
+  animation: l8 1s infinite linear;
+}
+@keyframes l8 {
+  16.67% {
+    background-position: 0% 0%, 50% 100%, 100% 100%;
+  }
+  33.33% {
+    background-position: 0% 0%, 50% 0%, 100% 100%;
+  }
+  50% {
+    background-position: 0% 0%, 50% 0%, 100% 0%;
+  }
+  66.67% {
+    background-position: 0% 100%, 50% 0%, 100% 0%;
+  }
+  83.33% {
+    background-position: 0% 100%, 50% 100%, 100% 0%;
+  }
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  text-indent: 1px;
+  text-overflow: "";
+}
