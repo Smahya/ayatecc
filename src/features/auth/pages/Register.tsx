@@ -78,8 +78,8 @@ export default function Register() {
   });
 
   return (
-    <div className="grid gap-4 relative sm:p-10 p-4">
-      <div className="grid gap-2">
+    <div className="grid gap-4 relative sm:p-10 p-6">
+      <div className="grid gap-2 mb-4">
         <Text variant="h1" className="text-center">
           Make Payment
         </Text>
@@ -124,7 +124,7 @@ export default function Register() {
           >
             For enquiries, contact us on{" "}
             <span className="text-neutral-950 dark:text-white font-semibold cursor-pointer text-sm leading-[120%] tracking-[-0.2px]">
-              0202020202
+              0244-197-207
             </span>
           </Text>
         </div>
