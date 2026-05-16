@@ -10,6 +10,7 @@ import axios from "axios";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PACKAGES, type Pkg } from "@/lib/packages";
+import { isValidPhoneNumber, parsePhoneNumberFromString } from "libphonenumber-js";
 
 const schema = z.object({
   email: z
@@ -17,7 +18,12 @@ const schema = z.object({
     .email("Enter a valid email")
     .optional()
     .or(z.literal("")),
-  phone: z.string().min(10, "Enter a 10-digit number"),
+  phone: z
+    .string()
+    .min(1, "Phone number is required")
+    .refine((v) => isValidPhoneNumber(v, "GH"), {
+      message: "Enter a valid Ghanaian phone number",
+    }),
   amount: z.number().min(1, "Choose a package"),
 });
 
@@ -35,11 +41,13 @@ export default function Register() {
 
   const { mutate: registerMutation, isPending } = useMutation({
     mutationFn: async (payload: FormValues) => {
+      const phoneE164 =
+        parsePhoneNumberFromString(payload.phone, "GH")?.number ?? payload.phone;
       const { data } = await axios.post<{
         authorization_url: string;
         access_code: string;
         reference: string;
-      }>("/api/payment/initialize", payload);
+      }>("/api/payment/initialize", { ...payload, phone: phoneE164 });
       return data;
     },
     onSuccess: async ({ access_code, reference }) => {
