@@ -3,130 +3,192 @@
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
-import { Text } from "@/components/Text";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { SelectComponent } from "@/components/Select";
 import axios from "axios";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { PACKAGES, type Pkg } from "@/lib/packages";
+
+const schema = z.object({
+  email: z
+    .string()
+    .email("Enter a valid email")
+    .optional()
+    .or(z.literal("")),
+  phone: z.string().min(10, "Enter a 10-digit number"),
+  amount: z.number().min(1, "Choose a package"),
+});
+
+type FormValues = z.infer<typeof schema>;
 
 export default function Register() {
-  const schema = z.object({
-    email: z.string().email(),
-    phone: z.string().min(10),
-    amount: z.number().min(1),
-  });
+  const [selectedId, setSelectedId] = useState<string>("standard");
 
-  const { register, handleSubmit, formState, setValue } = useForm<
-    z.infer<typeof schema>
-  >({
+  const { register, handleSubmit, formState, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    defaultValues: {
+      amount: PACKAGES.find((p) => p.id === "standard")!.amountGhs,
+    },
   });
-
-  const initializePayment = async (email: string, amount: number) => {
-    return await axios.post(
-      `${process.env.NEXT_PUBLIC_PAYSTACK_BASE_URL}/transaction/initialize`,
-      {
-        email,
-        amount,
-        callback_url: `${window.location.origin}/payment/verify`,
-        metadata: {
-          custom_fields: [
-            {
-              display_name: "Payment For",
-              variable_name: "payment_for",
-              value: "Registration",
-            },
-          ],
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PAYSTACK_SECRET_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  };
-
-  function openPaystack(url: string) {
-    const aTag = document.createElement("a");
-    aTag.href = url;
-    aTag.target = "_blank";
-    aTag.click();
-  }
 
   const { mutate: registerMutation, isPending } = useMutation({
-    mutationFn: async (payload: {
-      email: string;
-      phone: string;
-      amount: number;
-    }) => {
-      return await initializePayment(payload.email, payload.amount);
+    mutationFn: async (payload: FormValues) => {
+      const { data } = await axios.post<{
+        authorization_url: string;
+        access_code: string;
+        reference: string;
+      }>("/api/payment/initialize", payload);
+      return data;
     },
-    onSuccess: (response) => {
-      const { authorization_url } = response.data.data;
-      openPaystack(authorization_url);
+    onSuccess: async ({ access_code, reference }) => {
+      const { default: PaystackPop } = await import("@paystack/inline-js");
+      const popup = new PaystackPop();
+      // The lib's runtime accepts (accessCode, { onSuccess, onCancel, onError })
+      // but the bundled .d.ts only declares one arg. Bypass the stale types.
+      (
+        popup.resumeTransaction as unknown as (
+          accessCode: string,
+          handlers: {
+            onSuccess?: (tx: { reference: string }) => void;
+            onCancel?: () => void;
+            onError?: (err: unknown) => void;
+          }
+        ) => void
+      )(access_code, {
+        onSuccess: (tx) => {
+          window.location.href = `/payment/verify?reference=${
+            tx?.reference || reference
+          }`;
+        },
+        onCancel: () => {
+          // Modal closed without paying — stay on the form
+        },
+        onError: () => {
+          window.location.href = "/payment/failed";
+        },
+      });
     },
     onError: () => {
-      console.log("Paystack could not be initialized");
+      console.error("Payment could not be initialized");
     },
   });
 
-  const onSubmit = handleSubmit((data) => {
-    registerMutation(data);
-  });
+  const onSubmit = handleSubmit((data) => registerMutation(data));
+
+  const handleSelect = (pkg: Pkg) => {
+    setSelectedId(pkg.id);
+    setValue("amount", pkg.amountGhs, { shouldValidate: true });
+  };
 
   return (
-    <div className="grid gap-4 relative sm:p-10 p-6">
-      <div className="grid gap-2 mb-4">
-        <Text variant="h1" className="text-center">
-          Make Payment
-        </Text>
-        <Text variant="body2" className="text-center">
-          Make payment for your preferred package
-        </Text>
+    <div className="grid gap-6">
+      <div className="grid gap-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+          Buy a voucher
+        </h1>
+        <p className="text-sm text-ink-60">
+          Choose a bundle and we&apos;ll send the code to you.
+        </p>
       </div>
 
-      <form className="grid gap-4" onSubmit={onSubmit}>
-        <Input
-          label="Phone Number"
-          placeholder="Phone Number"
-          {...register("phone")}
-          error={formState.errors.phone?.message}
-        />
-        <Input
-          label="Email Address"
-          placeholder="Email Address"
-          {...register("email")}
-          error={formState.errors.email?.message}
-        />
-        <SelectComponent
-          options={["1", "2", "3"]}
-          label="Select Package"
-          onChange={(value) => setValue("amount", parseInt(value.target.value))}
-        />
+      <form className="grid gap-6" onSubmit={onSubmit} noValidate>
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-sm font-medium text-ink">
+            Package
+          </legend>
+          <div className="-mx-7 sm:-mx-9 px-7 sm:px-9 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 snap-x snap-mandatory">
+              {PACKAGES.map((pkg) => {
+                const active = selectedId === pkg.id;
+                return (
+                  <button
+                    type="button"
+                    key={pkg.id}
+                    onClick={() => handleSelect(pkg)}
+                    aria-pressed={active}
+                    className={cn(
+                      "relative text-left rounded-lg border px-3 py-3 transition-[border-color] duration-150 snap-start flex-none w-[120px]",
+                      "focus:outline-none",
+                      active
+                        ? "border-ink bg-ink text-paper"
+                        : "border-mute-line bg-paper text-ink hover:border-ink/40"
+                    )}
+                  >
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className={cn(
+                          "text-[11px] font-medium",
+                          active ? "text-paper/70" : "text-mute"
+                        )}
+                      >
+                        GH₵
+                      </span>
+                      <span className="text-xl font-semibold tabular leading-none">
+                        {pkg.amountGhs}
+                      </span>
+                    </div>
+                    <div className="mt-2.5 grid gap-0.5">
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          active ? "text-paper" : "text-ink"
+                        )}
+                      >
+                        {pkg.data}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[11px]",
+                          active ? "text-paper/60" : "text-mute"
+                        )}
+                      >
+                        {pkg.validity}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {formState.errors.amount && (
+            <p className="text-xs text-danger">
+              {formState.errors.amount.message}
+            </p>
+          )}
+        </fieldset>
 
-        <Button
-          block
-          type="submit"
-          disabled={isPending}
-          loading={isPending}
-          className="my-8"
-        >
-          Continue
-        </Button>
+        <div className="grid gap-4">
+          <Input
+            label="Phone number"
+            placeholder="024 000 0000"
+            inputMode="tel"
+            {...register("phone")}
+            error={formState.errors.phone?.message}
+          />
+          <Input
+            label="Email address (optional)"
+            placeholder="you@example.com"
+            inputMode="email"
+            {...register("email")}
+            error={formState.errors.email?.message}
+          />
+        </div>
 
-        <div className="flex items-center justify-center gap-1.5 bg-neutral-50 absolute bottom-0 left-0 right-0 py-2">
-          <Text
-            variant="body2"
-            className="text-center text-neutral-600 dark:text-neutral-300"
+        <div className="grid gap-2 pt-1">
+          <Button
+            block
+            type="submit"
+            disabled={isPending}
+            loading={isPending}
+            className="h-11"
           >
-            For enquiries, contact us on{" "}
-            <span className="text-neutral-950 dark:text-white font-semibold cursor-pointer text-sm leading-[120%] tracking-[-0.2px]">
-              0244-197-207
-            </span>
-          </Text>
+            {isPending ? "Initializing" : "Continue to payment"}
+          </Button>
+          <p className="text-center text-xs text-mute">
+            Secure payment powered by Paystack
+          </p>
         </div>
       </form>
     </div>

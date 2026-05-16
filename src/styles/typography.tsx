@@ -5,14 +5,16 @@ export type TypographyVariant =
   | "h3"
   | "body1"
   | "body2"
-  | "small";
+  | "small"
+  | "eyebrow";
 type className = HTMLAttributes<HTMLElement>["className"];
 
 export const typography: Record<TypographyVariant, className> = {
-  h1: "font-bold text-2xl leading-[120%] tracking-[-0.5px]", // Text Preset 1
-  h2: "font-bold text-xl leading-[120%] tracking-[-0.5px]", // Text Preset 2
-  h3: "font-semibold text-base leading-[120%] tracking-[-0.3px]", // Text Preset 3
-  body1: "font-medium text-sm leading-[120%] tracking-[-0.2px]", // Text Preset 4
-  body2: "font-normal text-sm leading-[120%] tracking-[-0.2px]", // Text Preset 5
-  small: "font-normal text-xs leading-[120%] tracking-[-0.2px]", // Text Preset 6
+  h1: "font-sans font-semibold text-2xl sm:text-3xl tracking-tight text-ink",
+  h2: "font-sans font-semibold text-xl tracking-tight text-ink",
+  h3: "font-sans font-medium text-lg tracking-tight text-ink",
+  body1: "font-sans text-base text-ink",
+  body2: "font-sans text-sm text-ink-60",
+  small: "font-sans text-xs text-mute",
+  eyebrow: "font-sans text-xs font-medium text-mute uppercase tracking-wide",
 } as const;

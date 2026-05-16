@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
+const geistMono = Geist_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
+
 export const metadata: Metadata = {
-  title: "Ayatecc",
-  description: "Ayatecc Digital",
+  title: "Ayatecc — Data Vouchers",
+  description: "Buy a data voucher. Pay once. Use anywhere.",
 };
 
 export default function RootLayout({
@@ -20,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
-        className={`${inter.variable} antialiased bg-white dark:bg-neutral-950 text-neutral-950 dark:text-neutral-50 h-screen w-full`}
+        className={`${manrope.variable} ${geistMono.variable} antialiased min-h-screen w-full bg-canvas text-ink font-sans`}
       >
         <Providers>{children}</Providers>
       </body>
